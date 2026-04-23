@@ -7,6 +7,15 @@ import { JizoCountdown } from "@/components/jizo-countdown"
 import { JizoAvatar } from "@/components/jizo-avatar"
 import { ZenBackground } from "@/components/zen-background"
 
+interface StartDateParts {
+  year: number
+  month: number
+  day: number
+  hour: number
+  minute: number
+  second: number
+}
+
 function parseStartDate(searchParams: URLSearchParams): Date {
   const year = searchParams.get("year")
   const month = searchParams.get("month")
@@ -56,17 +65,15 @@ function buildStartDateParams(date: Date): URLSearchParams {
   return params
 }
 
-function formatDateDisplay(date: Date): string {
-  const year = date.getFullYear()
-  const month = date.getMonth() + 1
-  const day = date.getDate()
-  const hour = date.getHours()
-  const minute = date.getMinutes()
-
-  if (hour === 0 && minute === 0) {
-    return `${year}年${month}月${day}日より`
+function toStartDateParts(date: Date): StartDateParts {
+  return {
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+    hour: date.getHours(),
+    minute: date.getMinutes(),
+    second: date.getSeconds(),
   }
-  return `${year}年${month}月${day}日 ${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}より`
 }
 
 function JizoContent() {
@@ -74,22 +81,54 @@ function JizoContent() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [startDate, setStartDate] = useState<Date | null>(null)
+  const [startDateParts, setStartDateParts] = useState<StartDateParts | null>(null)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     if (!hasValidStartDate(searchParams)) {
       const initialAccessDate = new Date()
       setStartDate(initialAccessDate)
+      setStartDateParts(toStartDateParts(initialAccessDate))
       router.replace(`${pathname}?${buildStartDateParams(initialAccessDate).toString()}`)
       setMounted(true)
       return
     }
 
-    setStartDate(parseStartDate(searchParams))
+    const parsedStartDate = parseStartDate(searchParams)
+    setStartDate(parsedStartDate)
+    setStartDateParts(toStartDateParts(parsedStartDate))
     setMounted(true)
   }, [pathname, router, searchParams])
 
-  if (!mounted || !startDate) {
+  const updateStartDatePart = (part: keyof StartDateParts, value: number) => {
+    if (!startDateParts || !Number.isFinite(value)) {
+      return
+    }
+
+    const nextParts = {
+      ...startDateParts,
+      [part]: value,
+    }
+    const nextDate = new Date(
+      nextParts.year,
+      nextParts.month - 1,
+      nextParts.day,
+      nextParts.hour,
+      nextParts.minute,
+      nextParts.second
+    )
+
+    if (isNaN(nextDate.getTime())) {
+      return
+    }
+
+    const normalizedParts = toStartDateParts(nextDate)
+    setStartDateParts(normalizedParts)
+    setStartDate(nextDate)
+    router.replace(`${pathname}?${buildStartDateParams(nextDate).toString()}`)
+  }
+
+  if (!mounted || !startDate || !startDateParts) {
     return null
   }
 
@@ -100,7 +139,51 @@ function JizoContent() {
       <div className="relative z-10 flex flex-col items-center gap-8 px-4 text-center">
         {/* Title */}
         <div className="space-y-2">
-          <p className="text-muted-foreground text-sm tracking-widest">{formatDateDisplay(startDate)}</p>
+          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground tracking-widest">
+            <DatePartInput
+              value={startDateParts.year}
+              unit="年"
+              min={1}
+              onChange={(nextValue) => updateStartDatePart("year", nextValue)}
+            />
+            <DatePartInput
+              value={startDateParts.month}
+              unit="月"
+              min={1}
+              max={12}
+              onChange={(nextValue) => updateStartDatePart("month", nextValue)}
+            />
+            <DatePartInput
+              value={startDateParts.day}
+              unit="日"
+              min={1}
+              max={31}
+              onChange={(nextValue) => updateStartDatePart("day", nextValue)}
+            />
+            <span> </span>
+            <DatePartInput
+              value={startDateParts.hour}
+              unit="時"
+              min={0}
+              max={23}
+              onChange={(nextValue) => updateStartDatePart("hour", nextValue)}
+            />
+            <DatePartInput
+              value={startDateParts.minute}
+              unit="分"
+              min={0}
+              max={59}
+              onChange={(nextValue) => updateStartDatePart("minute", nextValue)}
+            />
+            <DatePartInput
+              value={startDateParts.second}
+              unit="秒"
+              min={0}
+              max={59}
+              onChange={(nextValue) => updateStartDatePart("second", nextValue)}
+            />
+            <span>より</span>
+          </div>
           <h1 className="text-3xl md:text-4xl font-serif font-medium text-foreground tracking-wide">お地蔵様になりました</h1>
         </div>
 
@@ -125,6 +208,40 @@ function JizoContent() {
         </div>
       </div>
     </main>
+  )
+}
+
+function DatePartInput({
+  value,
+  unit,
+  onChange,
+  min,
+  max,
+}: {
+  value: number
+  unit: string
+  onChange: (value: number) => void
+  min: number
+  max?: number
+}) {
+  return (
+    <label className="inline-flex items-center gap-1">
+      <input
+        type="number"
+        inputMode="numeric"
+        value={value}
+        min={min}
+        max={max}
+        onChange={(event) => {
+          const parsedValue = parseInt(event.target.value, 10)
+          if (!isNaN(parsedValue)) {
+            onChange(parsedValue)
+          }
+        }}
+        className="w-16 rounded-md border border-border/60 bg-background/70 px-2 py-1 text-center text-sm text-foreground"
+      />
+      <span>{unit}</span>
+    </label>
   )
 }
 
