@@ -13,6 +13,7 @@ function parseStartDate(searchParams: URLSearchParams): Date {
   const day = searchParams.get("day")
   const hour = searchParams.get("hour")
   const minute = searchParams.get("minute")
+  const second = searchParams.get("second")
 
   if (year && month && day) {
     const parsedYear = parseInt(year, 10)
@@ -20,8 +21,9 @@ function parseStartDate(searchParams: URLSearchParams): Date {
     const parsedDay = parseInt(day, 10)
     const parsedHour = hour ? parseInt(hour, 10) : 0
     const parsedMinute = minute ? parseInt(minute, 10) : 0
+    const parsedSecond = second ? parseInt(second, 10) : 0
 
-    const date = new Date(parsedYear, parsedMonth, parsedDay, parsedHour, parsedMinute, 0)
+    const date = new Date(parsedYear, parsedMonth, parsedDay, parsedHour, parsedMinute, parsedSecond)
     if (!isNaN(date.getTime())) {
       return date
     }
@@ -50,6 +52,7 @@ function buildStartDateParams(date: Date): URLSearchParams {
   params.set("day", date.getDate().toString())
   params.set("hour", date.getHours().toString())
   params.set("minute", date.getMinutes().toString())
+  params.set("second", date.getSeconds().toString())
   return params
 }
 
