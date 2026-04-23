@@ -1,19 +1,59 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 import { JizoCountdown } from "@/components/jizo-countdown"
 import { JizoAvatar } from "@/components/jizo-avatar"
 import { ZenBackground } from "@/components/zen-background"
 
-export default function Home() {
-  const [startDate] = useState(() => new Date())
+function parseStartDate(searchParams: URLSearchParams): Date {
+  const year = searchParams.get("year")
+  const month = searchParams.get("month")
+  const day = searchParams.get("day")
+  const hour = searchParams.get("hour")
+  const minute = searchParams.get("minute")
+
+  if (year && month && day) {
+    const parsedYear = parseInt(year, 10)
+    const parsedMonth = parseInt(month, 10) - 1 // Month is 0-indexed
+    const parsedDay = parseInt(day, 10)
+    const parsedHour = hour ? parseInt(hour, 10) : 0
+    const parsedMinute = minute ? parseInt(minute, 10) : 0
+
+    const date = new Date(parsedYear, parsedMonth, parsedDay, parsedHour, parsedMinute, 0)
+    if (!isNaN(date.getTime())) {
+      return date
+    }
+  }
+
+  return new Date()
+}
+
+function formatDateDisplay(date: Date): string {
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const hour = date.getHours()
+  const minute = date.getMinutes()
+
+  if (hour === 0 && minute === 0) {
+    return `${year}年${month}月${day}日より`
+  }
+  return `${year}年${month}月${day}日 ${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}より`
+}
+
+function JizoContent() {
+  const searchParams = useSearchParams()
+  const [startDate, setStartDate] = useState<Date | null>(null)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setStartDate(parseStartDate(searchParams))
     setMounted(true)
-  }, [])
+  }, [searchParams])
 
-  if (!mounted) {
+  if (!mounted || !startDate) {
     return null
   }
 
@@ -25,7 +65,7 @@ export default function Home() {
         {/* Title */}
         <div className="space-y-2">
           <p className="text-muted-foreground text-sm tracking-widest">
-            本日より
+            {formatDateDisplay(startDate)}
           </p>
           <h1 className="text-3xl md:text-4xl font-serif font-medium text-foreground tracking-wide">
             お地蔵様になりました
@@ -53,5 +93,13 @@ export default function Home() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <JizoContent />
+    </Suspense>
   )
 }
