@@ -27,7 +27,7 @@ function parseStartDate(searchParams: URLSearchParams): Date {
     }
   }
 
-  return new Date()
+  return new Date(Date.now() - 1000)
 }
 
 function formatDateDisplay(date: Date): string {

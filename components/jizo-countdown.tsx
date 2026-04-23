@@ -21,20 +21,23 @@ function calculateTimeRemaining(startDate: Date): TimeRemaining {
   const now = new Date()
   const elapsedMs = Math.max(0, now.getTime() - startDate.getTime())
 
-  // Calculate elapsed time
   const elapsedSeconds = Math.floor(elapsedMs / 1000)
-  const elapsedMinutes = Math.floor(elapsedSeconds / 60)
-  const elapsedHours = Math.floor(elapsedMinutes / 60)
-  const elapsedDays = Math.floor(elapsedHours / 24)
-  const elapsedYears = Math.floor(elapsedDays / 365)
-  
-  // Calculate remaining time until Maitreya appears
-  const remainingYears = Math.max(0, YEARS_UNTIL_MAITREYA - elapsedYears)
-  const remainingDays = (365 - (elapsedDays % 365)) % 365
-  const remainingHours = 23 - (elapsedHours % 24)
-  const remainingMinutes = 59 - (elapsedMinutes % 60)
-  const remainingSeconds = 59 - (elapsedSeconds % 60)
-  
+  const totalDurationSeconds = YEARS_UNTIL_MAITREYA * 365 * 24 * 60 * 60
+  const remainingTotalSeconds = Math.max(0, totalDurationSeconds - elapsedSeconds)
+
+  const secondsPerYear = 365 * 24 * 60 * 60
+  const secondsPerDay = 24 * 60 * 60
+  const secondsPerHour = 60 * 60
+
+  const remainingYears = Math.floor(remainingTotalSeconds / secondsPerYear)
+  const remainingAfterYears = remainingTotalSeconds % secondsPerYear
+  const remainingDays = Math.floor(remainingAfterYears / secondsPerDay)
+  const remainingAfterDays = remainingAfterYears % secondsPerDay
+  const remainingHours = Math.floor(remainingAfterDays / secondsPerHour)
+  const remainingAfterHours = remainingAfterDays % secondsPerHour
+  const remainingMinutes = Math.floor(remainingAfterHours / 60)
+  const remainingSeconds = remainingAfterHours % 60
+
   return {
     years: remainingYears,
     days: remainingDays,
