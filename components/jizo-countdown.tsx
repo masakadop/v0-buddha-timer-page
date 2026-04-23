@@ -8,6 +8,10 @@ interface JizoCountdownProps {
 
 // 弥勒菩薩が現れるまでの年数：五十六億七千万年
 const YEARS_UNTIL_MAITREYA = 5_670_000_000
+const SECONDS_PER_YEAR = 365 * 24 * 60 * 60
+const SECONDS_PER_DAY = 24 * 60 * 60
+const SECONDS_PER_HOUR = 60 * 60
+const SECONDS_PER_MINUTE = 60
 
 interface TimeRemaining {
   years: number
@@ -20,23 +24,29 @@ interface TimeRemaining {
 function calculateTimeRemaining(startDate: Date): TimeRemaining {
   const now = new Date()
   const elapsedMs = Math.max(0, now.getTime() - startDate.getTime())
-
   const elapsedSeconds = Math.floor(elapsedMs / 1000)
-  const totalDurationSeconds = YEARS_UNTIL_MAITREYA * 365 * 24 * 60 * 60
-  const remainingTotalSeconds = Math.max(0, totalDurationSeconds - elapsedSeconds)
 
-  const secondsPerYear = 365 * 24 * 60 * 60
-  const secondsPerDay = 24 * 60 * 60
-  const secondsPerHour = 60 * 60
+  const elapsedYears = Math.floor(elapsedSeconds / SECONDS_PER_YEAR)
+  const elapsedWithinYear = elapsedSeconds % SECONDS_PER_YEAR
 
-  const remainingYears = Math.floor(remainingTotalSeconds / secondsPerYear)
-  const remainingAfterYears = remainingTotalSeconds % secondsPerYear
-  const remainingDays = Math.floor(remainingAfterYears / secondsPerDay)
-  const remainingAfterDays = remainingAfterYears % secondsPerDay
-  const remainingHours = Math.floor(remainingAfterDays / secondsPerHour)
-  const remainingAfterHours = remainingAfterDays % secondsPerHour
-  const remainingMinutes = Math.floor(remainingAfterHours / 60)
-  const remainingSeconds = remainingAfterHours % 60
+  const hasRemainder = elapsedWithinYear > 0
+  const remainingYears = Math.max(
+    0,
+    YEARS_UNTIL_MAITREYA - elapsedYears - (hasRemainder ? 1 : 0)
+  )
+  const remainingAfterYears =
+    remainingYears === 0 && elapsedYears >= YEARS_UNTIL_MAITREYA
+      ? 0
+      : hasRemainder
+        ? SECONDS_PER_YEAR - elapsedWithinYear
+        : 0
+
+  const remainingDays = Math.floor(remainingAfterYears / SECONDS_PER_DAY)
+  const remainingAfterDays = remainingAfterYears % SECONDS_PER_DAY
+  const remainingHours = Math.floor(remainingAfterDays / SECONDS_PER_HOUR)
+  const remainingAfterHours = remainingAfterDays % SECONDS_PER_HOUR
+  const remainingMinutes = Math.floor(remainingAfterHours / SECONDS_PER_MINUTE)
+  const remainingSeconds = remainingAfterHours % SECONDS_PER_MINUTE
 
   return {
     years: remainingYears,
