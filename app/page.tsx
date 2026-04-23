@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Suspense } from "react"
 import { JizoCountdown } from "@/components/jizo-countdown"
 import { JizoAvatar } from "@/components/jizo-avatar"
@@ -30,6 +30,29 @@ function parseStartDate(searchParams: URLSearchParams): Date {
   return new Date()
 }
 
+function hasValidStartDate(searchParams: URLSearchParams): boolean {
+  const year = searchParams.get("year")
+  const month = searchParams.get("month")
+  const day = searchParams.get("day")
+
+  if (!year || !month || !day) {
+    return false
+  }
+
+  const parsedDate = parseStartDate(searchParams)
+  return !isNaN(parsedDate.getTime())
+}
+
+function buildStartDateParams(date: Date): URLSearchParams {
+  const params = new URLSearchParams()
+  params.set("year", date.getFullYear().toString())
+  params.set("month", (date.getMonth() + 1).toString())
+  params.set("day", date.getDate().toString())
+  params.set("hour", date.getHours().toString())
+  params.set("minute", date.getMinutes().toString())
+  return params
+}
+
 function formatDateDisplay(date: Date): string {
   const year = date.getFullYear()
   const month = date.getMonth() + 1
@@ -44,14 +67,24 @@ function formatDateDisplay(date: Date): string {
 }
 
 function JizoContent() {
+  const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    if (!hasValidStartDate(searchParams)) {
+      const initialAccessDate = new Date()
+      setStartDate(initialAccessDate)
+      router.replace(`${pathname}?${buildStartDateParams(initialAccessDate).toString()}`)
+      setMounted(true)
+      return
+    }
+
     setStartDate(parseStartDate(searchParams))
     setMounted(true)
-  }, [searchParams])
+  }, [pathname, router, searchParams])
 
   if (!mounted || !startDate) {
     return null
@@ -60,16 +93,12 @@ function JizoContent() {
   return (
     <main className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
       <ZenBackground />
-      
+
       <div className="relative z-10 flex flex-col items-center gap-8 px-4 text-center">
         {/* Title */}
         <div className="space-y-2">
-          <p className="text-muted-foreground text-sm tracking-widest">
-            {formatDateDisplay(startDate)}
-          </p>
-          <h1 className="text-3xl md:text-4xl font-serif font-medium text-foreground tracking-wide">
-            お地蔵様になりました
-          </h1>
+          <p className="text-muted-foreground text-sm tracking-widest">{formatDateDisplay(startDate)}</p>
+          <h1 className="text-3xl md:text-4xl font-serif font-medium text-foreground tracking-wide">お地蔵様になりました</h1>
         </div>
 
         {/* Jizo Avatar */}
